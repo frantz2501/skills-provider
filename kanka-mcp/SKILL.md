@@ -116,6 +116,15 @@ The Expanse (83436), Nephilim (97596), Codex martialis (164060),
 Imperator (178925), Shadowrun - NMA (185932). Utiliser
 `kanka_list_campaigns` pour une liste à jour.
 
+### État de campagne synchronisé en local
+
+La campagne **Shade (31309)** a son relevé intégré dans l'atelier JDR
+`D:\git\shade\kb\campagne\` (chronique, PJ, acteurs, scénarios, règles
+maison), indexé par le RAG de l'atelier (catégorie `campagne`). Pour toute
+production de contenu Shade, lire d'abord ces synthèses plutôt que de
+re-parcourir Kanka ; ne resynchroniser Kanka que si elles datent
+(procédure dans `D:\git\shade\kb\index.md`).
+
 ## Si le serveur n'est pas connecté
 
 Fallback stdio local (zéro-dépendance, Node >= 18) :
