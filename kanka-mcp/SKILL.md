@@ -58,10 +58,71 @@ journals, abilities, tags, conversations, dice_rolls.
    récupérer l'ID créé pour les opérations suivantes (posts, sous-ressources).
 4. Vérifier : relire l'entité modifiée avant d'annoncer la réussite.
 
+## Déploiement en production (VPS cyberchinois.eu)
+
+Le serveur MCP `kanka-mcp` est déployé en permanence sur le VPS
+`51.91.109.128` (`cyberchinois.eu`), utilisateur SSH `heimdal`
+(authentification par clé via Pageant : utiliser
+`"C:\Program Files\PuTTY\plink" -batch -agent heimdal@51.91.109.128`).
+`ssh` OpenSSH ne voit pas Pageant sous Windows : passer par plink.
+
+| Élément | Emplacement (serveur) |
+|---|---|
+| Code (v1.4.0) | `~/kanka-mcp/server.js` |
+| Env (chmod 600) | `~/kanka-mcp/kanka-mcp.env` |
+| Unité systemd | `~/.config/systemd/user/kanka-mcp.service` |
+
+Variables d'env : `KANKA_API_TOKEN` (token API kanka.io),
+`KANKA_DEFAULT_CAMPAIGN` (vide — passer `campaign_id` explicitement),
+`KANKA_API_BASE=https://api.kanka.io/1.0`, `KANKA_MCP_BIND=127.0.0.1`,
+`KANKA_MCP_PORT=3333`, `KANKA_MCP_HTTP_TOKEN` (bearer HTTP ; le lire sur
+le serveur avec `grep KANKA_MCP_HTTP_TOKEN ~/kanka-mcp/kanka-mcp.env`).
+
+Le service est un **unité systemd utilisateur** (pas de sudo nécessaire ;
+linger activé, donc il survit aux déconnexions et reboots) :
+
+```bash
+systemctl --user status kanka-mcp        # état
+systemctl --user restart kanka-mcp       # après édition de l'env
+journalctl --user -u kanka-mcp -n 50     # logs
+curl http://127.0.0.1:3333/               # health check (sur le serveur)
+```
+
+### Accès depuis le PC (tunnel SSH, option A du DEPLOY.md)
+
+Le serveur bind sur 127.0.0.1 uniquement. Depuis le PC (Pageant chargé) :
+
+```
+"C:\Program Files\PuTTY\plink" -batch -agent -N -L 3333:127.0.0.1:3333 heimdal@51.91.109.128
+```
+
+Le client MCP est déjà configuré dans `~/.vibe/config.toml`
+(`[[mcp_servers]]` kanka, transport http, `http://127.0.0.1:3333` +
+bearer `Authorization`). Si un appel MCP échoue avec « connection
+refused », le tunnel est tombé : le relancer. Vérification rapide :
+
+```bash
+curl -H "Authorization: Bearer <token-http>" -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' http://127.0.0.1:3333/
+```
+
+### Campagnes disponibles (ids, octobre 2026)
+
+Qin - les chroniques du clan du Panda céleste (8498), Shade (31309),
+Pavillon noir (34813), Anneau unique (38283), Shadowrun (38889),
+Eclipse phase (39208), Qin Shaoling & Wudang (41777), Northmen (51901),
+Mars : Prémices aux guerres stellaires (37119), Joan of Arc (66971),
+The Expanse (83436), Nephilim (97596), Codex martialis (164060),
+Imperator (178925), Shadowrun - NMA (185932). Utiliser
+`kanka_list_campaigns` pour une liste à jour.
+
 ## Si le serveur n'est pas connecté
 
-Le serveur est zéro-dépendance (Node >= 18) :
+Fallback stdio local (zéro-dépendance, Node >= 18) :
 `git clone https://github.com/frantz2501/kanka-mcp && node server.js`
-(stdio) ou `node server.js --local` (app HTTP sur 127.0.0.1:3333).
+(stdio) ou `node server.js --http` (HTTP sur 127.0.0.1:3333).
 Config dans `kanka-mcp.json` : `apiToken`, `defaultCampaign`, `apiBase`
 (https://api.kanka.io/1.0). Token : profil > API sur kanka.io.
+Le déploiement complet est documenté dans `DEPLOY.md` du repo
+(`/opt` + service système via `sudo bash install.sh`, ou variante
+utilisateur systemd décrite ci-dessus).
